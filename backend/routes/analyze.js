@@ -97,15 +97,41 @@ router.post('/', authMiddleware, async (req, res) => {
     let parsedAnalysis;
     try {
       console.log('Attempting to extract JSON from AI response...');
+      console.log('Raw AI response:', analysisResult.substring(0, 500) + '...');
+      
       const jsonMatch = analysisResult.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         console.log('✅ JSON found in response');
-        parsedAnalysis = JSON.parse(jsonMatch[0]);
+        const rawParsed = JSON.parse(jsonMatch[0]);
         console.log('✅ JSON parsed successfully');
+        
+        // Ensure all fields are properly formatted
+        parsedAnalysis = {
+          summary: rawParsed.summary || 'Medical report analyzed',
+          reportType: rawParsed.reportType || 'Medical Report',
+          keyFindings: Array.isArray(rawParsed.keyFindings) 
+            ? rawParsed.keyFindings 
+            : (typeof rawParsed.keyFindings === 'string' 
+              ? [rawParsed.keyFindings] 
+              : ['Key findings processed']),
+          recommendations: Array.isArray(rawParsed.recommendations) 
+            ? rawParsed.recommendations 
+            : (typeof rawParsed.recommendations === 'string' 
+              ? [rawParsed.recommendations] 
+              : ['Consult with healthcare professional']),
+          medicinesSuggested: Array.isArray(rawParsed.medicinesSuggested) 
+            ? rawParsed.medicinesSuggested 
+            : (typeof rawParsed.medicinesSuggested === 'string' 
+              ? [rawParsed.medicinesSuggested] 
+              : []),
+          severity: rawParsed.severity || 'medium'
+        };
+        
+        console.log('✅ Analysis structure validated and normalized');
       } else {
         console.log('⚠️ No JSON found, using fallback structure');
         parsedAnalysis = {
-          summary: analysisResult,
+          summary: analysisResult.substring(0, 500),
           reportType: 'Medical Report',
           keyFindings: ['Analysis provided as text'],
           recommendations: ['Consult with healthcare professional'],
@@ -115,10 +141,12 @@ router.post('/', authMiddleware, async (req, res) => {
       }
     } catch (parseError) {
       console.log('❌ JSON parsing failed:', parseError.message);
+      console.log('❌ Problematic JSON:', jsonMatch ? jsonMatch[0].substring(0, 200) : 'No match found');
+      
       parsedAnalysis = {
-        summary: analysisResult,
+        summary: analysisResult.substring(0, 500),
         reportType: 'Medical Report',
-        keyFindings: ['Analysis provided as text'],
+        keyFindings: ['Analysis could not be parsed properly'],
         recommendations: ['Consult with healthcare professional'],
         medicinesSuggested: [],
         severity: 'medium'
@@ -127,6 +155,17 @@ router.post('/', authMiddleware, async (req, res) => {
 
     // Step 8: Save to database
     console.log('Step 8: Saving report to database...');
+    
+    // Final validation of analysis structure
+    console.log('Final analysis structure:', {
+      summary: typeof parsedAnalysis.summary,
+      reportType: typeof parsedAnalysis.reportType,
+      keyFindings: Array.isArray(parsedAnalysis.keyFindings) ? 'array' : typeof parsedAnalysis.keyFindings,
+      recommendations: Array.isArray(parsedAnalysis.recommendations) ? 'array' : typeof parsedAnalysis.recommendations,
+      medicinesSuggested: Array.isArray(parsedAnalysis.medicinesSuggested) ? 'array' : typeof parsedAnalysis.medicinesSuggested,
+      severity: typeof parsedAnalysis.severity
+    });
+    
     const report = new Report({
       userId: req.user.userId,
       title: title.trim(),
