@@ -35,8 +35,12 @@ router.post('/', authMiddleware, async (req, res) => {
 
     // Step 4: Read image file
     console.log('Step 4: Reading image file...');
-    const imagePath = path.join(__dirname, '..', 'uploads', req.user.userId, path.basename(imageUrl));
-    console.log('Image path:', imagePath);
+    // The imageUrl comes from upload API (e.g., '/uploads/userId/filename.jpg')
+    // We need to get the filename from imageUrl and construct the path correctly
+    const filename = path.basename(imageUrl);
+    const imagePath = path.join(__dirname, '..', 'uploads', req.user.userId, filename);
+    console.log('Image URL received:', imageUrl);
+    console.log('Constructed image path:', imagePath);
     
     let imageBuffer;
     try {
@@ -78,8 +82,15 @@ router.post('/', authMiddleware, async (req, res) => {
     console.log('✅ Base64 conversion complete, length:', base64Image.length);
     
     console.log('🤖 Calling OpenRouter GPT-4o-mini for analysis...');
-    const analysisResult = await analyzeImageFast(base64Image);
-    console.log('✅ OpenRouter analysis complete, result length:', analysisResult.length);
+    let analysisResult;
+    try {
+      analysisResult = await analyzeImageFast(base64Image);
+      console.log('✅ OpenRouter analysis complete, result length:', analysisResult.length);
+    } catch (apiError) {
+      console.error('❌ OpenRouter API error:', apiError.message);
+      console.error('API Error details:', apiError.response?.data || apiError);
+      throw new Error(`AI analysis failed: ${apiError.message}`);
+    }
     
     // Step 7: Parse AI response
     console.log('Step 7: Parsing AI response...');
