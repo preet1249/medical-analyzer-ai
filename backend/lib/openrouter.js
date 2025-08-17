@@ -9,6 +9,7 @@ if (!OPENROUTER_API_KEY) {
 
 const openRouterClient = axios.create({
   baseURL: OPENROUTER_BASE_URL,
+  timeout: 60000, // 60 seconds timeout
   headers: {
     'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
     'Content-Type': 'application/json',
@@ -17,43 +18,45 @@ const openRouterClient = axios.create({
   }
 });
 
+// Test function to verify API key
+async function testOpenRouterConnection() {
+  try {
+    console.log('Testing OpenRouter API connection...');
+    const response = await openRouterClient.get('/models');
+    console.log('✅ OpenRouter API connection successful');
+    return true;
+  } catch (error) {
+    console.error('❌ OpenRouter API connection failed:', error.response?.data || error.message);
+    return false;
+  }
+}
+
 async function analyzeImageFast(imageBase64) {
   try {
     console.log('🚀 Starting FAST AI analysis with GPT-4o (no OCR)...');
+    
+    // First test API connection
+    const isConnected = await testOpenRouterConnection();
+    if (!isConnected) {
+      throw new Error('OpenRouter API connection failed. Please check your API key and internet connection.');
+    }
 
-    const systemPrompt = `You are a medical AI assistant specialized in analyzing medical reports and images. You have excellent OCR capabilities built-in, so you can read text from images directly.
-
-Analyze the medical report image and provide a structured response in the following JSON format:
+    const systemPrompt = `Analyze this medical report image and return ONLY valid JSON in this exact format:
 {
-  "summary": "Brief overview of the report (2-3 sentences)",
-  "reportType": "Type of medical report (e.g., Blood Test, X-Ray, MRI, CT Scan, Ultrasound, Lab Results, etc.)",
-  "keyFindings": ["Finding 1", "Finding 2", "Finding 3"],
-  "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"],
-  "medicinesSuggested": ["Medicine/Treatment 1", "Medicine/Treatment 2"],
-  "severity": "low|medium|high"
+  "summary": "Brief overview in 1-2 sentences",
+  "reportType": "Type of medical report",
+  "keyFindings": ["Finding 1", "Finding 2"],
+  "recommendations": ["Recommendation 1", "Recommendation 2"],
+  "medicinesSuggested": ["Medicine 1"],
+  "severity": "low"
 }
 
-IMPORTANT INSTRUCTIONS:
-- Read ALL text visible in the image carefully
-- Extract specific values, numbers, and measurements
-- Pay attention to reference ranges and normal values
-- Identify any abnormal or concerning values
-- Be very thorough in reading the medical report
-- Always recommend consulting with healthcare professionals
-- Be accurate but not alarmist
-- Explain medical terms in simple language
-- Focus on what the report shows, not diagnosing conditions`;
+Rules:
+- Return ONLY valid JSON, no other text
+- Keep responses concise
+- Always recommend consulting healthcare professionals`;
 
-    const userMessage = `Please carefully analyze this medical report image. Read all the text, numbers, values, and measurements visible in the image. 
-
-Provide a comprehensive analysis including:
-1. What type of medical report this is
-2. All the key findings and values you can read from the image
-3. Any abnormal values compared to reference ranges
-4. Recommendations based on the findings
-5. Any medicine or treatment suggestions if appropriate
-
-Please be very thorough in reading the text and numbers in the image.`;
+    const userMessage = `Analyze this medical report and return valid JSON only.`;
 
     const messages = [
       {
@@ -81,7 +84,7 @@ Please be very thorough in reading the text and numbers in the image.`;
     const response = await openRouterClient.post('/chat/completions', {
       model: 'openai/gpt-4o-mini',
       messages,
-      max_tokens: 3000,
+      max_tokens: 1000, // Reduced for faster response
       temperature: 0.1
     });
 
