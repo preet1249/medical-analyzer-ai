@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, FileText, Trash2, Eye } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { reportsAPI } from '@/lib/api';
 
 interface Report {
   _id: string;
@@ -27,23 +28,12 @@ export default function ReportsList({ onReportSelect, refreshTrigger }: ReportsL
 
   const fetchReports = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
-      const response = await fetch('/api/reports', {
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setReports(data.data);
-        }
+      const data = await reportsAPI.getReports();
+      if (data.success) {
+        setReports(data.data);
       }
-    } catch (error) {
-      console.error('Error fetching reports:', error);
+    } catch (error: any) {
+      console.error('Error fetching reports:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -58,21 +48,10 @@ export default function ReportsList({ onReportSelect, refreshTrigger }: ReportsL
 
     setDeleting(reportId);
     try {
-      const token = localStorage.getItem('auth-token');
-      const response = await fetch(`/api/reports?id=${reportId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        setReports(prev => prev.filter(report => report._id !== reportId));
-      }
-    } catch (error) {
-      console.error('Error deleting report:', error);
+      await reportsAPI.deleteReport(reportId);
+      setReports(prev => prev.filter(report => report._id !== reportId));
+    } catch (error: any) {
+      console.error('Error deleting report:', error.response?.data || error.message);
     } finally {
       setDeleting(null);
     }

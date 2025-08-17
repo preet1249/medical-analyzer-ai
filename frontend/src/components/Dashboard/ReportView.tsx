@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { reportsAPI } from '@/lib/api';
 
 interface Report {
   _id: string;
@@ -31,30 +32,15 @@ export default function ReportView({ reportId, onBack }: ReportViewProps) {
 
   const fetchReport = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
-      const response = await fetch(`/api/reports/${reportId}`, {
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Report fetch response:', data);
-        if (data.success) {
-          setReport(data.data);
-        } else {
-          console.error('Report fetch failed:', data.error);
-        }
+      const data = await reportsAPI.getReport(reportId);
+      console.log('Report fetch response:', data);
+      if (data.success) {
+        setReport(data.data);
       } else {
-        console.error('HTTP error:', response.status, response.statusText);
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Error response:', errorData);
+        console.error('Report fetch failed:', data.error);
       }
-    } catch (error) {
-      console.error('Error fetching report:', error);
+    } catch (error: any) {
+      console.error('Error fetching report:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
