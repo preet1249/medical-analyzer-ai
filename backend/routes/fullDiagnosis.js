@@ -67,7 +67,7 @@ router.get('/', async (req, res) => {
 
     // 4. Auth Token Check
     const authHeader = req.headers.authorization;
-    const authCookie = req.cookies['auth-token'];
+    const authCookie = req.cookies ? req.cookies['auth-token'] : null;
     
     diagnosis.auth = {
       hasAuthHeader: !!authHeader,

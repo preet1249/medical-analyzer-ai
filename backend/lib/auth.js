@@ -20,7 +20,7 @@ function getTokenFromRequest(req) {
     return authHeader.substring(7);
   }
   
-  const cookie = req.cookies['auth-token'];
+  const cookie = req.cookies ? req.cookies['auth-token'] : null;
   return cookie || null;
 }
 
