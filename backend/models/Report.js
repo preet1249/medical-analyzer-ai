@@ -20,7 +20,7 @@ const AnalysisSchema = new mongoose.Schema({
   },
   severity: {
     type: String,
-    enum: ['low', 'medium', 'high'],
+    enum: ['low', 'medium', 'moderate', 'high'],
     default: 'medium'
   }
 });
