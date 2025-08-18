@@ -19,6 +19,7 @@ app.use(limiter);
 app.use(cors({
   origin: [
     'http://localhost:3000',
+    'https://medical-report-analyze-seven.vercel.app',
     'https://medical-report-analyzer-d26v.vercel.app',
     'https://medical-report-analyzes.vercel.app'
   ],
