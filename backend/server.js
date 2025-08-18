@@ -20,9 +20,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'https://medical-report-analyzer-d26v.vercel.app',
-    'https://medical-report-analyzes.vercel.app',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+    'https://medical-report-analyzes.vercel.app'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
