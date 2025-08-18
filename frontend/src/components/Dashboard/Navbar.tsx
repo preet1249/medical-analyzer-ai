@@ -1,38 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileText, LogOut, User, Menu, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Navbar() {
-  const [user, setUser] = useState<User | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      localStorage.removeItem('auth-token');
-      localStorage.removeItem('user');
-      router.push('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    logout();
+    router.push('/');
   };
 
   return (

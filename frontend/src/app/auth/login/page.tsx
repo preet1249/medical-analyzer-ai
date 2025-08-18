@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileText, Mail, Lock } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-import { authAPI } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +17,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const { login, isAuthenticated, isLoading } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -32,17 +40,15 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const data = await authAPI.login(formData.email, formData.password);
+      const success = await login(formData.email, formData.password);
 
-      if (data.success) {
-        localStorage.setItem('auth-token', data.data.token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+      if (success) {
         router.push('/dashboard');
       } else {
-        setError(data.error || 'Login failed');
+        setError('Invalid email or password. Please try again.');
       }
     } catch (error: any) {
-      setError(error.response?.data?.error || 'Network error. Please try again.');
+      setError(error.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
